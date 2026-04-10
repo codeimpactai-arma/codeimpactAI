@@ -5,4 +5,5 @@ pydantic
 python-dotenv
 streamlit
 google-genai
+python-multipart
 
