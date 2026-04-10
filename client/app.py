@@ -1,5 +1,6 @@
 import json
 import time
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -51,8 +52,8 @@ def centered_title_with_logo(title: str, logo_path: Path, img_px: int = 90, font
 # SUPABASE_URL="https://xxxx.supabase.co"
 # SUPABASE_KEY="YOUR_KEY"
 # ============================================================
-SUPABASE_URL = st.secrets.get("SUPABASE_URL", "https://hmouoztlgrsotauzohgm.supabase.co")
-SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "")  # <-- DO NOT hardcode secrets in code
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://hmouoztlgrsotauzohgm.supabase.co")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 # ============================================================
 # UI TEXT (עברית בלבד) + מיפויים לערכי DB באנגלית
