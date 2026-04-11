@@ -16,7 +16,7 @@ section[data-testid="stSidebar"] * {
   text-align: right;
 }
 
-/* Role cards (מה שהיה לך) */
+/* Role cards - unified clickable card buttons */
 .role-card {
   background: white;
   padding: 20px;
@@ -35,6 +35,33 @@ section[data-testid="stSidebar"] * {
 .role-card:hover {
   border-color: #4CAF50;
   transform: translateY(-3px);
+}
+
+/* Styled role-card buttons on the home page */
+div[data-testid="stButton"].role-btn > button {
+  background: white !important;
+  border: 1px solid #ddd !important;
+  border-radius: 10px !important;
+  height: 200px !important;
+  width: 100% !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  color: #222 !important;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 8px !important;
+  transition: border-color 0.2s, transform 0.2s !important;
+  white-space: pre-wrap !important;
+  line-height: 1.4 !important;
+}
+
+div[data-testid="stButton"].role-btn > button:hover {
+  border-color: #4CAF50 !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.10) !important;
 }
 
 /* שיפור קל: כפתורים וכותרות בטפסים */

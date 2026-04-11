@@ -201,26 +201,63 @@ with APP.container():
         centered_title_with_logo("Scratch AI", LOGO, img_px=95, font_px=56, gap_px=10)
         st.divider()
 
+        # CSS to style role buttons as clickable cards
+        st.markdown("""
+        <style>
+        /* Style role buttons as cards */
+        div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"]:nth-child(1) button[data-testid="stBaseButton-secondary"],
+        div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"]:nth-child(2) button[data-testid="stBaseButton-secondary"],
+        div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"]:nth-child(3) button[data-testid="stBaseButton-secondary"] {
+            background: white !important;
+            border: 1px solid #ddd !important;
+            border-radius: 12px !important;
+            min-height: 180px !important;
+            height: 180px !important;
+            font-size: 18px !important;
+            font-weight: 700 !important;
+            color: #333 !important;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.06) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            align-items: center !important;
+            gap: 10px !important;
+            transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease !important;
+        }
+        div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"]:nth-child(1) button[data-testid="stBaseButton-secondary"]:hover,
+        div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"]:nth-child(2) button[data-testid="stBaseButton-secondary"]:hover,
+        div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"]:nth-child(3) button[data-testid="stBaseButton-secondary"]:hover {
+            border-color: #4CAF50 !important;
+            transform: translateY(-4px) !important;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.12) !important;
+        }
+        div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"]:nth-child(1) p,
+        div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"]:nth-child(2) p,
+        div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"]:nth-child(3) p {
+            font-size: 18px !important;
+            line-height: 1.8 !important;
+            text-align: center !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
         c1, c2, c3 = st.columns(3)
 
         with c1:
-            st.markdown("""<div class="role-card"><h1>👨‍🎓</h1><h3>תלמיד/ה</h3></div>""", unsafe_allow_html=True)
             if not st.session_state["logged_in"]:
-                if st.button("התחברות תלמיד/ה", width="stretch"):
+                if st.button("👨\u200d🎓\n\nתלמיד/ה", key="btn_student", use_container_width=True):
                     st.session_state.target = "student"
                     navigate("login")
 
         with c2:
-            st.markdown("""<div class="role-card"><h1>🏫</h1><h3>מורה</h3></div>""", unsafe_allow_html=True)
             if not st.session_state["logged_in"]:
-                if st.button("התחברות מורה", width="stretch"):
+                if st.button("🏫\n\nמורה", key="btn_teacher", use_container_width=True):
                     st.session_state.target = "teacher"
                     navigate("login")
 
         with c3:
-            st.markdown("""<div class="role-card"><h1>🛡️</h1><h3>מנהל/ת</h3></div>""", unsafe_allow_html=True)
             if not st.session_state["logged_in"]:
-                if st.button("התחברות מנהל/ת", width="stretch"):
+                if st.button("🛡️\n\nמנהל/ת", key="btn_admin", use_container_width=True):
                     st.session_state.target = "admin"
                     navigate("login")
 
