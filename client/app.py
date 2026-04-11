@@ -287,97 +287,57 @@ with APP.container():
 
         with c2:
             if not st.session_state["logged_in"]:
-                with st.form("login"):
-                    st.markdown(
-                        f"<h3 style='text-align: center;'>התחברות {he_role(tgt)}</h3>",
-                        unsafe_allow_html=True)
+                login_placeholder = st.empty()
+                
+                with login_placeholder.container():
+                    with st.form("login"):
+                        st.markdown(
+                            f"<h3 style='text-align: center;'>התחברות {he_role(tgt)}</h3>",
+                            unsafe_allow_html=True)
+    
+                        u = st.text_input("שם משתמש").strip()
+                        p = st.text_input("סיסמה", type="password").strip()
+    
+                        c_name = ""
+                        if tgt == "student":
+                            c_name = st.text_input("שם כיתה").strip()
+                            st.caption("טיפ: אם אין לך משתמש, החשבון ייווצר אוטומטית אם הכיתה קיימת.")
+    
+                        submitted = st.form_submit_button("כניסה", width="stretch")
 
-                    u = st.text_input("שם משתמש").strip()
-                    p = st.text_input("סיסמה", type="password").strip()
+                if submitted:
+                    login_placeholder.empty()  # Immediately hide the form
+                    with login_placeholder.container():
+                        st.info("מתחבר, אנא המתן...")
+                        
+                    if not u or not p:
+                        st.error("אנא הזן/י שם משתמש וסיסמה.")
+                        st.stop()
 
-                    c_name = ""
-                    if tgt == "student":
-                        c_name = st.text_input("שם כיתה").strip()
-                        st.caption("טיפ: אם אין לך משתמש, החשבון ייווצר אוטומטית אם הכיתה קיימת.")
+                    # חיפוש משתמש קיים לפי username
+                    res = supabase.table("users").select("*, schools(name)").eq("username", u).execute()
+                    found_user = res.data[0] if res.data else None
 
-                    submitted = st.form_submit_button("כניסה", width="stretch")
-
-                    if submitted:
-                        if not u or not p:
-                            st.error("אנא הזן/י שם משתמש וסיסמה.")
-                            st.stop()
-
-                        # חיפוש משתמש קיים לפי username
-                        res = supabase.table("users").select("*, schools(name)").eq("username", u).execute()
-                        found_user = res.data[0] if res.data else None
-
-                        if found_user:
-                            if tgt == "student":
-                                if found_user.get("class_name") != c_name:
-                                    st.error(
-                                        f"⛔ אין הרשאה: אתה רשום/ה לכיתה '{found_user.get('class_name')}', לא '{c_name}'."
-                                    )
-                                elif str(found_user.get("password", "")) == p:
-                                    st.session_state.auth_user = found_user
-                                    st.session_state["logged_in"] = True
-                                    navigate("dashboard")
-                                else:
-                                    st.error("סיסמה שגויה.")
-                            else:
-                                # מורה/מנהל
-                                if str(found_user.get("password", "")) == p:
-                                    st.session_state.auth_user = found_user
-                                    st.session_state["logged_in"] = True
-                                    navigate("dashboard")
-                                else:
-                                    st.error("סיסמה שגויה.")
-
-
-                        elif tgt == "student":
-
-                            # רישום אוטומטי לתלמיד חדש
-
-                            if not c_name:
-                                st.error("שם כיתה הוא חובה לתלמיד חדש.")
-
-                            else:
-                                # נחפש את הכיתה וגם מי המורה שלה כדי לרשת את בית הספר
-                                class_check = (
-                                    supabase.table("assignments")
-                                    .select("class_name, teacher_id")
-                                    .eq("class_name", c_name)
-                                    .execute()
-
+                    if found_user:
+                        if tgt == "student":
+                            if found_user.get("class_name") != c_name:
+                                st.error(
+                                    f"⛔ אין הרשאה: אתה רשום/ה לכיתה '{found_user.get('class_name')}', לא '{c_name}'."
                                 )
-
-                                if not class_check.data:
-
-                                    st.error(f"הכיתה '{c_name}' לא קיימת. פנה/י למורה.")
-
-                                else:
-
-                                    try:
-
-                                        # חילוץ מזהה המורה ומשיכת בית הספר שלו
-
-                                        teacher_id = class_check.data[0].get("teacher_id")
-
-                                        teacher_res = supabase.table("users").select("school_id").eq("id",
-                                                                                                     teacher_id).execute()
-
-                                        school_id = teacher_res.data[0].get("school_id") if teacher_res.data else None
-
-                                        new_student = {
-
-                                            "username": u,
-
-                                            "password": p,
-
-                                            "role": "student",
-
-                                            "full_name": u,
-
-                                            "class_name": c_name,
+                            elif str(found_user.get("password", "")) == p:
+                                st.session_state.auth_user = found_user
+                                st.session_state["logged_in"] = True
+                                navigate("dashboard")
+                            else:
+                                st.error("סיסמה שגויה.")
+                        else:
+                            # מורה/מנהל
+                            if str(found_user.get("password", "")) == p:
+                                st.session_state.auth_user = found_user
+                                st.session_state["logged_in"] = True
+                                navigate("dashboard")
+                            else:
+                                st.error("סיסמה שגויה.")
 
                                             "school_id": school_id
 
@@ -427,7 +387,7 @@ with APP.container():
         role = user.get("role", "")
 
 
-        col1, col2, col3 = st.columns([6, 4, 3])
+        col1, col2 = st.columns([10, 1])
 
         with col1:
             name = user.get('full_name', user.get('username', ''))
@@ -437,17 +397,18 @@ with APP.container():
             if school_name:
                 st.markdown(
                     f"""
-                    <div style="display: flex; align-items: baseline; gap: 10px; justify-content: flex-end; text-align: right;">
-                        <span style="color: #666; font-size: 18px;">🏫 {school_name}</span>
-                        <h1 style="margin: 0;">👤 {name}</h1>
+                    <div style="display: flex; align-items: center; justify-content: flex-start; gap: 15px; height: 100%;">
+                        <span style="color: #666; font-size: 20px;">🏫 {school_name}</span>
+                        <h2 style="margin: 0; padding-top: 5px;">👤 {name}</h2>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
             else:
-                st.markdown(f"<h1 style='text-align: right; margin: 0;'>👤 {name}</h1>", unsafe_allow_html=True)
+                st.markdown(f"<div style='display: flex; justify-content: flex-start; align-items: center; height: 100%;'><h2 style='margin: 0; padding-top: 5px;'>👤 {name}</h2></div>", unsafe_allow_html=True)
 
-        with col3:
+        with col2:
+            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
             if st.button("התנתקות"):
                 logout()
 
@@ -556,7 +517,7 @@ with APP.container():
                                 st.write(f"קישור: {s.get('link', '')}")
 
                                 if st.button("🤖 ניתוח עם AI", key=f"ai_{s['id']}"):
-                                    with st.spinner("מנתח פרויקט עם AI ו-Dr. Scratch..."):
+                                    with st.spinner("מנתח פרויקט עם AI..."):
                                         try:
                                             payload = {"project_url": s["link"], "rubrics": rubric_to_send}
                                             response = requests.post(
@@ -564,47 +525,73 @@ with APP.container():
                                                 json=payload,
                                                 timeout=120,
                                             )
-                                            response.raise_for_status()
-                                            res = response.json()
 
+                                            # בדיקה אם הסטטוס הוא 200
+                                            # אם יש שגיאת HTTP (404, 500, 503 וכו')
+                                            if response.status_code != 200:
+                                                st.error(f"❌ שגיאת שרת (סטטוס {response.status_code})")
+                                                try:
+                                                    # מנסים להציג את הפירוט שהשרת שלח
+                                                    st.json(response.json())
+                                                except:
+                                                    # אם השרת החזיר טקסט ולא JSON (למשל שגיאת Render)
+                                                    st.code(response.text)
+                                                st.stop()
+
+                                            res = response.json()
                                             st.session_state[f"sc_{s['id']}"] = res.get("suggested_score", 0)
                                             st.session_state[f"fb_{s['id']}"] = res.get("suggested_feedback", "")
-
                                             st.success("הניתוח הושלם ✅")
-                                            st.markdown("### 📝 משוב מפורט מה-AI")
-                                            st.markdown(res.get("suggested_feedback", "לא התקבל משוב מפורט."))
-                                            st.divider()
+                                            st.markdown(res.get("suggested_feedback", ""))
 
-                                            if "raw_dr_scratch" in res:
-                                                with st.expander("נתונים טכניים (פרטי Dr. Scratch)"):
-                                                    st.json(res["raw_dr_scratch"])
-
+                                        except requests.exceptions.Timeout:
+                                            st.error("❌ ה-Client התייאש (Timeout). ייתכן והשרת לוקח יותר מ-120 שניות.")
+                                        except requests.exceptions.ConnectionError:
+                                            st.error(f"❌ לא ניתן להתחבר לשרת בכתובת: {API_URL}. ודאי שה-Backend רץ.")
                                         except Exception as e:
-                                            st.error(f"❌ שגיאה במהלך ניתוח AI: {e}")
+                                            st.error(f"❌ שגיאה כללית בקוד: {type(e).__name__}")
+                                            st.exception(e)  # זה ידפיס את כל ה-Traceback למסך
 
                                 with st.form(f"grade_{s['id']}"):
-                                    st.write("### ציון סופי")
+                                    st.write("עריכת משוב וציון סופי")
 
-                                    score = st.number_input(
-                                        "ציון סופי (0–100)",
+                                    # 1. שליפת הערכים מה-session_state או מה-DB
+                                    # שימי לב לשמות המשתנים: suggested_score ו-suggested_feedback
+                                    suggested_score = st.session_state.get(f"sc_{s['id']}", s.get('final_score', 0))
+                                    suggested_feedback = st.session_state.get(f"fb_{s['id']}", s.get('feedback', ""))
+
+                                    # 2. שדה הציון
+                                    final_score = st.number_input(
+                                        "ציון (0-100)",
                                         min_value=0,
                                         max_value=100,
-                                        value=int(st.session_state.get(f"sc_{s['id']}", 0)),
+                                        value=int(suggested_score) if suggested_score else 0,
+                                        key=f"num_{s['id']}"
                                     )
 
-                                    fb = st.text_area(
-                                        "משוב סופי",
-                                        value=st.session_state.get(f"fb_{s['id']}", ""),
-                                        height=200,
+                                    # 3. שדה המשוב - מוודאים שהוא מקבל את ה-suggested_feedback מה-AI
+                                    final_feedback = st.text_area(
+                                        "משוב למורה (ניתן לעריכה)",
+                                        value=suggested_feedback,
+                                        height=250,
+                                        key=f"txt_{s['id']}"
                                     )
 
                                     if st.form_submit_button("שמירת ציון"):
                                         try:
-                                            supabase.table("submissions").update(
-                                                {"final_score": score, "feedback": fb, "status": "Graded"}
-                                            ).eq("id", s["id"]).execute()
+                                            # עדכון ב-Supabase - משתמשים ב-final_score ו-final_feedback מהטופס
+                                            supabase.table("submissions").update({
+                                                "final_score": final_score,
+                                                "feedback": final_feedback,
+                                                "status": "Graded"
+                                            }).eq("id", s["id"]).execute()
 
-                                            st.success(f"הציון עבור {s_name} נשמר ✅")
+                                            # ניקוי הזיכרון הזמני
+                                            st.session_state.pop(f"sc_{s['id']}", None)
+                                            st.session_state.pop(f"fb_{s['id']}", None)
+
+                                            st.success(f"הציון והמשוב עבור {s_name} נשמרו בהצלחה! ✅")
+                                            time.sleep(1)
                                             st.rerun()
                                         except Exception as e:
                                             st.error(f"❌ שמירה נכשלה: {e}")
@@ -671,8 +658,8 @@ with APP.container():
                         class_val = target_a["class_name"]
                         target_id = target_a["id"]
 
-                        if isinstance(target_a.get("rubric"), list) and len(target_a["rubric"]) > 0:
-                            current_rubric_data = target_a["rubric"]
+                        if isinstance(target_a.get("criteria"), list) and len(target_a["criteria"]) > 0:
+                            current_rubric_data = target_a["criteria"]
                     else:
                         st.info("אין מטלות לעריכה.")
 
@@ -695,8 +682,9 @@ with APP.container():
                         cat_name = cat_data.get("name", f"קטגוריה {i + 1}")
                         cat_weight = int(cat_data.get("weight", 0))
 
+                        unique_id = target_id if mode_en == "Edit Existing Assignment" else "new"
                         st.markdown(f"#### {cat_name}")
-                        w = st.number_input("משקל (%)", 0, 100, cat_weight, key=f"w_{i}")
+                        w = st.number_input("משקל (%)", 0, 100, cat_weight, key=f"w_{i}_{unique_id}")
                         total_weight += w
 
                         subs = cat_data.get("sub_criteria", [])
@@ -711,7 +699,7 @@ with APP.container():
 
                         edited_df = st.data_editor(
                             df_subs,
-                            key=f"ed_{i}",
+                            key=f"ed_{i}_{unique_id}",
                             hide_index=True,
                             width="stretch",
                             num_rows="fixed",
