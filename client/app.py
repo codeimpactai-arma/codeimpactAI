@@ -168,10 +168,11 @@ if "_hard_clear" not in st.session_state:
 
 APP = st.empty()
 
-# If we navigated, clear previous UI immediately
+# If we navigated, clear previous UI immediately and stop rendering old page
 if st.session_state["_hard_clear"]:
     APP.empty()
     st.session_state["_hard_clear"] = False
+    st.rerun()
 
 # ============================================================
 # APP (everything UI must be inside APP.container())
@@ -410,13 +411,14 @@ with APP.container():
 
         role = user.get("role", "")
 
-        # nicer loading feel when dashboard is heavy
-        with st.spinner("טוען לוח..."):
-            pass
 
         col1, col2, col3 = st.columns([3, 4, 6])
 
         with col1:
+            if st.button("התנתקות"):
+                logout()
+
+        with col3:
             name = user.get('full_name', user.get('username', ''))
             school_data = user.get("schools")
             school_name = school_data.get("name") if isinstance(school_data, dict) else ""
@@ -433,10 +435,6 @@ with APP.container():
                 )
             else:
                 st.markdown(f"<h1 style='text-align: right; margin: 0;'>👤 {name}</h1>", unsafe_allow_html=True)
-
-        with col3:
-            if st.button("התנתקות"):
-                logout()
 
         # ========================================================
         # TEACHER DASHBOARD
