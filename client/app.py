@@ -118,6 +118,8 @@ def navigate(page: str):
 def logout():
     st.session_state.auth_user = None
     st.session_state["logged_in"] = False
+    if "session_uid" in st.query_params:
+        del st.query_params["session_uid"]
     navigate("home")
 
 
@@ -193,6 +195,19 @@ with APP.container():
         st.session_state.target = None
     if "logged_in" not in st.session_state:
         st.session_state["logged_in"] = False
+
+    # שחזור התחברות אוטומטי אחרי רענון (F5)
+    if not st.session_state["logged_in"] and "session_uid" in st.query_params:
+        saved_uid = st.query_params["session_uid"]
+        try:
+            # משיכת פרטי המשתמש מחדש ממסד הנתונים
+            res = supabase.table("users").select("*, schools(name)").eq("id", saved_uid).execute()
+            if res.data:
+                st.session_state.auth_user = res.data[0]
+                st.session_state["logged_in"] = True
+                st.session_state.page = "dashboard"
+        except Exception:
+            pass
 
     # ============================================================
     # PAGE: HOME
@@ -316,6 +331,7 @@ with APP.container():
                             elif str(found_user.get("password", "")) == p:
                                 st.session_state.auth_user = found_user
                                 st.session_state["logged_in"] = True
+                                st.query_params["session_uid"] = found_user["id"]
                                 navigate("dashboard")
                             else:
                                 st.error("סיסמה שגויה.")
@@ -324,6 +340,7 @@ with APP.container():
                             if str(found_user.get("password", "")) == p:
                                 st.session_state.auth_user = found_user
                                 st.session_state["logged_in"] = True
+                                st.query_params["session_uid"] = found_user["id"]
                                 navigate("dashboard")
                             else:
                                 st.error("סיסמה שגויה.")
@@ -370,6 +387,7 @@ with APP.container():
                                         st.success(f"ברוך/ה הבא/ה! נוצר חשבון עבור {u} בכיתה {c_name}.")
                                         st.session_state.auth_user = full_user_res.data[0] if full_user_res.data else insert_res.data[0]
                                         st.session_state["logged_in"] = True
+                                        st.query_params["session_uid"] = new_user_id
                                         navigate("dashboard")
 
                                     else:
