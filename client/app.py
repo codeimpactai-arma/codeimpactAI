@@ -412,13 +412,9 @@ with APP.container():
         role = user.get("role", "")
 
 
-        col1, col2, col3 = st.columns([3, 4, 6])
+        col1, col2, col3 = st.columns([6, 4, 3])
 
         with col1:
-            if st.button("התנתקות"):
-                logout()
-
-        with col3:
             name = user.get('full_name', user.get('username', ''))
             school_data = user.get("schools")
             school_name = school_data.get("name") if isinstance(school_data, dict) else ""
@@ -435,6 +431,10 @@ with APP.container():
                 )
             else:
                 st.markdown(f"<h1 style='text-align: right; margin: 0;'>👤 {name}</h1>", unsafe_allow_html=True)
+
+        with col3:
+            if st.button("התנתקות"):
+                logout()
 
         # ========================================================
         # TEACHER DASHBOARD
