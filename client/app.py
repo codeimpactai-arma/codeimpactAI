@@ -276,31 +276,38 @@ with APP.container():
 
         with c2:
             if not st.session_state["logged_in"]:
-                with st.form("login"):
-                    st.markdown(
-                        f"<h3 style='text-align: center;'>התחברות {he_role(tgt)}</h3>",
-                        unsafe_allow_html=True)
+                login_placeholder = st.empty()
+                
+                with login_placeholder.container():
+                    with st.form("login"):
+                        st.markdown(
+                            f"<h3 style='text-align: center;'>התחברות {he_role(tgt)}</h3>",
+                            unsafe_allow_html=True)
+    
+                        u = st.text_input("שם משתמש").strip()
+                        p = st.text_input("סיסמה", type="password").strip()
+    
+                        c_name = ""
+                        if tgt == "student":
+                            c_name = st.text_input("שם כיתה").strip()
+                            st.caption("טיפ: אם אין לך משתמש, החשבון ייווצר אוטומטית אם הכיתה קיימת.")
+    
+                        submitted = st.form_submit_button("כניסה", width="stretch")
 
-                    u = st.text_input("שם משתמש").strip()
-                    p = st.text_input("סיסמה", type="password").strip()
+                if submitted:
+                    login_placeholder.empty()  # Immediately hide the form
+                    with login_placeholder.container():
+                        st.info("מתחבר, אנא המתן...")
+                        
+                    if not u or not p:
+                        st.error("אנא הזן/י שם משתמש וסיסמה.")
+                        st.stop()
 
-                    c_name = ""
-                    if tgt == "student":
-                        c_name = st.text_input("שם כיתה").strip()
-                        st.caption("טיפ: אם אין לך משתמש, החשבון ייווצר אוטומטית אם הכיתה קיימת.")
+                    # חיפוש משתמש קיים לפי username
+                    res = supabase.table("users").select("*, schools(name)").eq("username", u).execute()
+                    found_user = res.data[0] if res.data else None
 
-                    submitted = st.form_submit_button("כניסה", width="stretch")
-
-                    if submitted:
-                        if not u or not p:
-                            st.error("אנא הזן/י שם משתמש וסיסמה.")
-                            st.stop()
-
-                        # חיפוש משתמש קיים לפי username
-                        res = supabase.table("users").select("*, schools(name)").eq("username", u).execute()
-                        found_user = res.data[0] if res.data else None
-
-                        if found_user:
+                    if found_user:
                             if tgt == "student":
                                 if found_user.get("class_name") != c_name:
                                     st.error(
