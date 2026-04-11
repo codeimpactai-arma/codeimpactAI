@@ -846,6 +846,7 @@ with APP.container():
                                         st.success(
                                             f"הועלו בהצלחה {success_count} תלמידים לכיתה {batch_class} ✅")
                                         time.sleep(1)
+                                        fetch_users.clear()
                                         st.rerun()
                                 except Exception as e:
                                     st.error(f"❌ נכשל עיבוד הקובץ: {e}")
@@ -1005,16 +1006,22 @@ with APP.container():
             st.divider()
 
             # מנהל רשת רואה לשונית בתי ספר, מנהל בית ספר לא
+            admin_tabs = ["📊 סטטיסטיקה", "👥 ניהול והוספת משתמשים"]
             if not admin_school_id:
-                tab_stats, tab_members, tab_schools = st.tabs(
-                    ["📊 סטטיסטיקה", "👥 ניהול והוספת משתמשים", "🏫 ניהול בתי ספר"])
-            else:
-                tab_stats, tab_members = st.tabs(["📊 סטטיסטיקה", "👥 ניהול והוספת משתמשים"])
+                admin_tabs.append("🏫 ניהול בתי ספר")
+
+            selected_admin_tab = st.radio(
+                "ניווט מנהל",
+                admin_tabs,
+                horizontal=True,
+                key="admin_tab",
+                label_visibility="collapsed"
+            )
 
             # ----------------------------
             # TAB 1: STATISTICS
             # ----------------------------
-            with tab_stats:
+            if selected_admin_tab == "📊 סטטיסטיקה":
                 c_chart1, c_chart2 = st.columns(2)
 
                 with c_chart1:
@@ -1100,7 +1107,7 @@ with APP.container():
             # ----------------------------
             # TAB 2: MEMBERS (MANUAL & CSV)
             # ----------------------------
-            with tab_members:
+            elif selected_admin_tab == "👥 ניהול והוספת משתמשים":
                 st.subheader("יצירת משתמש חדש")
                 with st.form("create_user_form"):
                     c1, c2 = st.columns(2)
@@ -1131,6 +1138,7 @@ with APP.container():
                                 supabase.table("users").insert(user_payload).execute()
                                 st.success(f"המשתמש '{new_username}' נוצר ✅")
                                 time.sleep(1)
+                                fetch_users.clear()
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"❌ שגיאה: {e}")
@@ -1185,6 +1193,7 @@ with APP.container():
 
                                         st.success(f"הועלו בהצלחה {success_count} {ROLE_HE.get(batch_role)} ✅")
                                         time.sleep(1)
+                                        fetch_users.clear()
                                         st.rerun()
                                 except Exception as e:
                                     st.error(f"❌ נכשל עיבוד הקובץ: {e}")
@@ -1192,43 +1201,75 @@ with APP.container():
                 st.divider()
                 st.subheader("רשימת משתמשים")
                 if users_data:
-                    df_users = pd.DataFrame(users_data)
-                    cols = ["username", "role", "full_name", "class_name"]
-                    st.dataframe(df_users[[c for c in cols if c in df_users.columns]], width="stretch")
+                    with st.container(height=400, border=True):
+                        hc1, hc2, hc3, hc4, hc5 = st.columns([2, 2, 2, 2, 1])
+                        hc1.markdown("**שם משתמש**")
+                        hc2.markdown("**תפקיד**")
+                        hc3.markdown("**שם מלא**")
+                        hc4.markdown("**כיתה**")
+                        hc5.markdown("**מחיקה**")
+                        
+                        st.divider()
+                        
+                        for u in users_data:
+                            c1, c2, c3, c4, c5 = st.columns([2, 2, 2, 2, 1])
+                            c1.write(u.get("username", ""))
+                            c2.write(he_role(u.get("role", "")))
+                            c3.write(u.get("full_name", ""))
+                            c4.write(u.get("class_name", "") or "-")
+                            if c5.button("🗑️", key=f"del_{u['id']}", help="מחק משתמש זה"):
+                                try:
+                                    if u["role"] == "student":
+                                        supabase.table("submissions").delete().eq("student_id", u["id"]).execute()
+                                    elif u["role"] == "teacher":
+                                        teacher_assigns = supabase.table("assignments").select("id").eq("teacher_id", u["id"]).execute().data
+                                        if teacher_assigns:
+                                            assign_ids = [a["id"] for a in teacher_assigns]
+                                            supabase.table("submissions").delete().in_("assignment_id", assign_ids).execute()
+                                            supabase.table("assignments").delete().eq("teacher_id", u["id"]).execute()
+                                            
+                                    supabase.table("users").delete().eq("id", u["id"]).execute()
+                                    st.success(f"המשתמש {u.get('username')} נמחק בהצלחה ✅")
+                                    time.sleep(1.2)
+                                    fetch_users.clear()
+                                    fetch_submissions.clear()
+                                    fetch_assignments.clear()
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"❌ מחיקה נכשלה: {e}")
 
             # ----------------------------
             # TAB 3: SCHOOLS (Only for Super Admin)
             # ----------------------------
-            if not admin_school_id:
-                with tab_schools:
-                    st.subheader("ניהול בתי ספר")
-                    with st.form("create_school_form"):
-                        new_school_name = st.text_input("שם בית הספר החדש")
-                        if st.form_submit_button("הוספת בית ספר"):
-                            if new_school_name.strip():
-                                try:
-                                    existing_school = supabase.table("schools").select("id").eq("name",
-                                                                                                new_school_name.strip()).execute()
-                                    if existing_school.data:
-                                        st.error(f"בית הספר '{new_school_name.strip()}' כבר קיים במערכת.")
-                                    else:
-                                        supabase.table("schools").insert(
-                                            {"name": new_school_name.strip()}).execute()
-                                        st.success(f"בית הספר '{new_school_name.strip()}' נוסף בהצלחה ✅")
-                                        time.sleep(1.2)
-                                        st.rerun()
-                                except Exception as e:
-                                    st.error(f"❌ שגיאה בהוספת בית ספר: {e}")
-                            else:
-                                st.error("אנא הזן/י את שם בית הספר.")
+            elif selected_admin_tab == "🏫 ניהול בתי ספר":
+                st.subheader("ניהול בתי ספר")
+                with st.form("create_school_form"):
+                    new_school_name = st.text_input("שם בית הספר החדש")
+                    if st.form_submit_button("הוספת בית ספר"):
+                        if new_school_name.strip():
+                            try:
+                                existing_school = supabase.table("schools").select("id").eq("name",
+                                                                                            new_school_name.strip()).execute()
+                                if existing_school.data:
+                                    st.error(f"בית הספר '{new_school_name.strip()}' כבר קיים במערכת.")
+                                else:
+                                    supabase.table("schools").insert(
+                                        {"name": new_school_name.strip()}).execute()
+                                    st.success(f"בית הספר '{new_school_name.strip()}' נוסף בהצלחה ✅")
+                                    time.sleep(1.2)
+                                    st.rerun()
+                            except Exception as e:
+                                st.error(f"❌ שגיאה בהוספת בית ספר: {e}")
+                        else:
+                            st.error("אנא הזן/י את שם בית הספר.")
 
-                    st.divider()
-                    st.subheader("בתי ספר קיימים")
-                    if schools_data:
-                        df_schools = pd.DataFrame(schools_data)
-                        st.dataframe(df_schools, width="stretch")
-                    else:
-                        st.info("אין עדיין בתי ספר במערכת.")
+                st.divider()
+                st.subheader("בתי ספר קיימים")
+                if schools_data:
+                    df_schools = pd.DataFrame(schools_data)
+                    st.dataframe(df_schools, width="stretch")
+                else:
+                    st.info("אין עדיין בתי ספר במערכת.")
 
     else:
         st.warning("⚠️ לא נמצא תפקיד תקין למשתמש הזה.")
