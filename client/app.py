@@ -211,9 +211,9 @@ with APP.container():
             background: white !important;
             border: 1px solid #ddd !important;
             border-radius: 12px !important;
-            min-height: 180px !important;
-            height: 180px !important;
-            font-size: 18px !important;
+            min-height: 220px !important;
+            height: 220px !important;
+            font-size: 32px !important;
             font-weight: 700 !important;
             color: #333 !important;
             box-shadow: 0 4px 8px rgba(0,0,0,0.06) !important;
@@ -234,7 +234,7 @@ with APP.container():
         div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"]:nth-child(1) p,
         div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"]:nth-child(2) p,
         div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"]:nth-child(3) p {
-            font-size: 18px !important;
+            font-size: 32px !important;
             line-height: 1.8 !important;
             text-align: center !important;
         }
