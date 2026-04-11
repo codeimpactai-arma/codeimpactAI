@@ -406,11 +406,9 @@ with APP.container():
                                             navigate("dashboard")
 
                                         else:
-
                                             st.error("נכשלה יצירת משתמש (לא הוחזרו נתונים).")
 
                                     except Exception as e:
-
                                         st.error(f"❌ שגיאה ביצירת חשבון: {e}")
                         else:
                             st.error("❌ שם המשתמש אינו קיים במערכת.")
