@@ -422,11 +422,18 @@ with APP.container():
         # ========================================================
         if role == "teacher" and st.session_state["logged_in"]:
             st.title("לוח מורה")
-            tab1, tab2, tab3 = st.tabs(["בדיקת עבודות", "ניהול מטלות", "ניהול תלמידים"])
+            
+            teacher_tab = st.radio(
+                "ניווט מורה",
+                ["בדיקת עבודות", "ניהול מטלות", "ניהול תלמידים"],
+                horizontal=True,
+                key="teacher_tab",
+                label_visibility="collapsed"
+            )
             # ----------------------------
             # TAB 1: GRADING
             # ----------------------------
-            with tab1:
+            if teacher_tab == "בדיקת עבודות":
                 st.subheader("הגשות תלמידים")
 
                 teacher_assigns = (
@@ -578,7 +585,7 @@ with APP.container():
             # ----------------------------
             # TAB 2: MANAGE ASSIGNMENTS
             # ----------------------------
-            with tab2:
+            elif teacher_tab == "ניהול מטלות":
                 st.subheader("ניהול מטלות")
 
                 mode_en = st.radio(
@@ -637,8 +644,15 @@ with APP.container():
                         class_val = target_a["class_name"]
                         target_id = target_a["id"]
 
-                        if isinstance(target_a.get("criteria"), list) and len(target_a["criteria"]) > 0:
-                            current_rubric_data = target_a["criteria"]
+                        loaded_rubric = target_a.get("rubric") or target_a.get("criteria")
+                        if isinstance(loaded_rubric, str):
+                            try:
+                                loaded_rubric = json.loads(loaded_rubric)
+                            except Exception:
+                                pass
+                                
+                        if isinstance(loaded_rubric, list) and len(loaded_rubric) > 0:
+                            current_rubric_data = loaded_rubric
                     else:
                         st.info("אין מטלות לעריכה.")
 
@@ -765,7 +779,7 @@ with APP.container():
             # ----------------------------
             # TAB 3: MANAGE STUDENTS
             # ----------------------------
-            with tab3:
+            elif teacher_tab == "ניהול תלמידים":
                 st.subheader("ניהול תלמידים")
 
                 with st.expander("📤 העלאת תלמידים מקובץ CSV"):
@@ -834,11 +848,17 @@ with APP.container():
                     s = sub_map.get(a["id"])
 
                     if s:
-                        c1.write(f"סטטוס: {he_status(s['status'])}")
                         if s["status"] == "Graded":
+                            c1.success(f"סטטוס: {he_status(s['status'])}")
                             c2.metric("ציון", s["final_score"])
-                            c1.success(s.get("feedback", ""))
+                            if s.get("feedback"):
+                                st.markdown(f"**משוב מהמורה:** {s['feedback']}")
+                        elif s["status"] == "Submitted":
+                            c1.info(f"סטטוס: {he_status(s['status'])}")
                         else:
+                            c1.warning(f"סטטוס: {he_status(s['status'])}")
+
+                        if s["status"] != "Graded":
                             with c2.popover("עריכת קישור"):
                                 l_edit = st.text_input("קישור חדש", value=s["link"], key=f"edit_{a['id']}")
                                 if st.button("עדכון", key=f"update_{a['id']}", width="stretch"):
