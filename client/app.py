@@ -52,7 +52,7 @@ def centered_title_with_logo(title: str, logo_path: Path, img_px: int = 90, font
 # SUPABASE_URL="https://xxxx.supabase.co"
 # SUPABASE_KEY="YOUR_KEY"
 # ============================================================
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://hmouoztlgrsotauzohgm.supabase.co")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://fctvakaarrquaegxlnxa.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 # ============================================================
@@ -99,13 +99,24 @@ def load_css():
 
 @st.cache_resource
 def init_supabase():
-    if not SUPABASE_URL or not SUPABASE_KEY:
-        st.error("Debug: SUPABASE_URL or SUPABASE_KEY is empty string.")
-        return None
+    # 1. Safely try to pull the keys directly from st.secrets
     try:
-        return create_client(SUPABASE_URL, SUPABASE_KEY)
+        url = st.secrets["SUPABASE_URL"]
+        key = st.secrets["SUPABASE_KEY"]
+    except KeyError:
+        st.error("❌ Debug: Cannot find the keys in secrets.toml. Make sure the file exists and is named correctly.")
+        return None
+
+    # 2. Check if they are accidentally empty strings
+    if not url or not key:
+        st.error("❌ Debug: Found the keys, but they are empty strings.")
+        return None
+
+    # 3. Connect to Supabase
+    try:
+        return create_client(url, key)
     except Exception as e:
-        st.error(f"Debug: Error connecting to Supabase: {e}")
+        st.error(f"❌ Debug: Error connecting to Supabase: {e}")
         return None
 
 
@@ -401,6 +412,8 @@ with APP.container():
                                     except Exception as e:
 
                                         st.error(f"❌ שגיאה ביצירת חשבון: {e}")
+                        else:
+                            st.error("❌ שם המשתמש אינו קיים במערכת.")
 
         if st.button("חזרה"):
             navigate("home")
@@ -1169,8 +1182,22 @@ with APP.container():
                 st.subheader("רשימת משתמשים")
                 if users_data:
                     df_users = pd.DataFrame(users_data)
+
                     cols = ["username", "role", "full_name", "class_name"]
-                    st.dataframe(df_users[[c for c in cols if c in df_users.columns]], width="stretch")
+                    df_users = df_users[[c for c in cols if c in df_users.columns]]
+
+                    if "role" in df_users.columns:
+                        df_users["role"] = df_users["role"].apply(lambda x: ROLE_HE.get(x, x))
+
+                    df_users = df_users.fillna("")
+                    df_users = df_users.rename(columns={
+                        "username": "שם משתמש",
+                        "role": "תפקיד",
+                        "full_name": "שם מלא",
+                        "class_name": "כיתה"
+                    })
+
+                    st.table(df_users)
 
             # ----------------------------
             # TAB 3: SCHOOLS (Only for Super Admin)
