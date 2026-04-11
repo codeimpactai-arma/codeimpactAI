@@ -637,8 +637,8 @@ with APP.container():
                         class_val = target_a["class_name"]
                         target_id = target_a["id"]
 
-                        if isinstance(target_a.get("rubric"), list) and len(target_a["rubric"]) > 0:
-                            current_rubric_data = target_a["rubric"]
+                        if isinstance(target_a.get("criteria"), list) and len(target_a["criteria"]) > 0:
+                            current_rubric_data = target_a["criteria"]
                     else:
                         st.info("אין מטלות לעריכה.")
 
@@ -661,8 +661,9 @@ with APP.container():
                         cat_name = cat_data.get("name", f"קטגוריה {i + 1}")
                         cat_weight = int(cat_data.get("weight", 0))
 
+                        unique_id = target_id if mode_en == "Edit Existing Assignment" else "new"
                         st.markdown(f"#### {cat_name}")
-                        w = st.number_input("משקל (%)", 0, 100, cat_weight, key=f"w_{i}")
+                        w = st.number_input("משקל (%)", 0, 100, cat_weight, key=f"w_{i}_{unique_id}")
                         total_weight += w
 
                         subs = cat_data.get("sub_criteria", [])
@@ -677,7 +678,7 @@ with APP.container():
 
                         edited_df = st.data_editor(
                             df_subs,
-                            key=f"ed_{i}",
+                            key=f"ed_{i}_{unique_id}",
                             hide_index=True,
                             width="stretch",
                             num_rows="fixed",
