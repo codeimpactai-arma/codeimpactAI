@@ -1013,6 +1013,7 @@ with APP.container():
                     submissions_data = all_submissions_data
 
                 school_options = {s["name"]: s["id"] for s in schools_data}
+                school_id_to_name = {s["id"]: s["name"] for s in schools_data}
 
             graded_count = len([s for s in submissions_data if s["status"] == "Graded"])
 
@@ -1226,22 +1227,27 @@ with APP.container():
                 st.subheader("רשימת משתמשים")
                 if users_data:
                     with st.container(height=400, border=True):
-                        hc1, hc2, hc3, hc4, hc5 = st.columns([2, 2, 2, 2, 1])
+                        hc1, hc2, hc3, hc4, hc5, hc6 = st.columns([2, 1.5, 2, 2, 2, 1])
                         hc1.markdown("**שם משתמש**")
                         hc2.markdown("**תפקיד**")
                         hc3.markdown("**שם מלא**")
                         hc4.markdown("**כיתה**")
-                        hc5.markdown("**מחיקה**")
+                        hc5.markdown("**בית ספר**")
+                        hc6.markdown("**מחיקה**")
                         
                         st.divider()
                         
                         for u in users_data:
-                            c1, c2, c3, c4, c5 = st.columns([2, 2, 2, 2, 1])
+                            c1, c2, c3, c4, c5, c6 = st.columns([2, 1.5, 2, 2, 2, 1])
                             c1.write(u.get("username", ""))
                             c2.write(he_role(u.get("role", "")))
                             c3.write(u.get("full_name", ""))
                             c4.write(u.get("class_name", "") or "-")
-                            if c5.button("🗑️", key=f"del_{u['id']}", help="מחק משתמש זה"):
+                            
+                            school_name = school_id_to_name.get(u.get("school_id"), "-")
+                            c5.write(school_name)
+                            
+                            if c6.button("🗑️", key=f"del_{u['id']}", help="מחק משתמש זה"):
                                 try:
                                     if u["role"] == "student":
                                         supabase.table("submissions").delete().eq("student_id", u["id"]).execute()
