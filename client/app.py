@@ -168,11 +168,10 @@ if "_hard_clear" not in st.session_state:
 
 APP = st.empty()
 
-# If we navigated, clear previous UI immediately and stop rendering old page
+# If we navigated, clear previous UI immediately (continue execution to render new page)
 if st.session_state["_hard_clear"]:
     APP.empty()
     st.session_state["_hard_clear"] = False
-    st.rerun()
 
 # ============================================================
 # APP (everything UI must be inside APP.container())
@@ -266,6 +265,11 @@ with APP.container():
     # PAGE: LOGIN
     # ============================================================
     elif st.session_state.page == "login":
+        # If already logged in, skip rendering the login form entirely
+        if st.session_state["logged_in"]:
+            navigate("dashboard")
+            st.stop()
+
         tgt = st.session_state.target
 
         c1, c2, c3 = st.columns([1, 2, 1])
