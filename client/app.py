@@ -1128,13 +1128,18 @@ with APP.container():
             # ----------------------------
             elif selected_admin_tab == "👥 ניהול והוספת משתמשים":
                 st.subheader("יצירת משתמש חדש")
+                new_role = st.radio("תפקיד", ["student", "teacher", "admin"], format_func=he_role, horizontal=True)
+
                 with st.form("create_user_form"):
                     c1, c2 = st.columns(2)
                     new_username = c1.text_input("שם משתמש")
                     new_password = c2.text_input("סיסמה", type="password")
                     new_fullname = c1.text_input("שם מלא")
-                    new_role = c2.selectbox("תפקיד", ["student", "teacher", "admin"], format_func=he_role)
-                    new_class = st.text_input("שם כיתה") if new_role == "student" else ""
+                    
+                    if new_role == "student":
+                        new_class = c2.text_input("שם כיתה")
+                    else:
+                        new_class = ""
 
                     if admin_school_id:
                         selected_school_id = admin_school_id
