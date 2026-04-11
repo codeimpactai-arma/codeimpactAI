@@ -1266,8 +1266,25 @@ with APP.container():
                 st.divider()
                 st.subheader("בתי ספר קיימים")
                 if schools_data:
-                    df_schools = pd.DataFrame(schools_data)
-                    st.dataframe(df_schools, width="stretch")
+                    with st.container(height=400, border=True):
+                        hc1, hc2 = st.columns([4, 1])
+                        hc1.markdown("**שם בית ספר**")
+                        hc2.markdown("**מחיקה**")
+                        
+                        st.divider()
+                        
+                        for sch in schools_data:
+                            c1, c2 = st.columns([4, 1])
+                            c1.write(sch.get("name", ""))
+                            if c2.button("🗑️", key=f"del_school_{sch['id']}", help="מחק בית ספר זה"):
+                                try:
+                                    # מחיקת בית הספר ממסד הנתונים
+                                    supabase.table("schools").delete().eq("id", sch["id"]).execute()
+                                    st.success(f"בית הספר '{sch.get('name')}' נמחק בהצלחה ✅")
+                                    time.sleep(1.2)
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"❌ מחיקה נכשלה: {e}")
                 else:
                     st.info("אין עדיין בתי ספר במערכת.")
 
