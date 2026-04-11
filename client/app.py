@@ -416,7 +416,7 @@ with APP.container():
         role = user.get("role", "")
 
 
-        col1, col2, col3 = st.columns([6, 4, 3])
+        col1, col2 = st.columns([10, 1])
 
         with col1:
             name = user.get('full_name', user.get('username', ''))
@@ -426,17 +426,18 @@ with APP.container():
             if school_name:
                 st.markdown(
                     f"""
-                    <div style="display: flex; align-items: baseline; gap: 10px; justify-content: flex-end; text-align: right;">
-                        <span style="color: #666; font-size: 18px;">🏫 {school_name}</span>
-                        <h1 style="margin: 0;">👤 {name}</h1>
+                    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 15px; height: 100%;">
+                        <span style="color: #666; font-size: 20px;">🏫 {school_name}</span>
+                        <h2 style="margin: 0; padding-top: 5px;">👤 {name}</h2>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
             else:
-                st.markdown(f"<h1 style='text-align: right; margin: 0;'>👤 {name}</h1>", unsafe_allow_html=True)
+                st.markdown(f"<div style='display: flex; justify-content: flex-end; align-items: center; height: 100%;'><h2 style='margin: 0; padding-top: 5px;'>👤 {name}</h2></div>", unsafe_allow_html=True)
 
-        with col3:
+        with col2:
+            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
             if st.button("התנתקות"):
                 logout()
 
