@@ -783,6 +783,7 @@ with APP.container():
                                 "title": new_title,
                                 "class_name": new_class.strip(),
                                 "criteria": final_rubric,
+                                "rubric": final_rubric,
                             }
                             try:
                                 payload_bytes = json.dumps(rubric_payload, ensure_ascii=False).encode("utf-8")

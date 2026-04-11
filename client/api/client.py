@@ -2,7 +2,7 @@ import requests
 import streamlit as st
 import os
 
-API_URL = os.getenv("API_URL") or "http://127.0.0.1:8000"
+API_URL = (os.getenv("API_URL") or "http://127.0.0.1:8000").rstrip("/")
 
 class APIError(Exception):
     pass
