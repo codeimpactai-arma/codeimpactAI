@@ -414,9 +414,9 @@ with APP.container():
         with st.spinner("טוען לוח..."):
             pass
 
-        col1, col2, col3 = st.columns([6, 4, 3])
+        col1, col2, col3 = st.columns([3, 4, 6])
 
-        with col3:
+        with col1:
             name = user.get('full_name', user.get('username', ''))
             school_data = user.get("schools")
             school_name = school_data.get("name") if isinstance(school_data, dict) else ""
@@ -424,17 +424,17 @@ with APP.container():
             if school_name:
                 st.markdown(
                     f"""
-                                <div style="display: flex; align-items: baseline; gap: 10px;">
-                                    <h1 style="margin: 0;">👤 {name}</h1>
-                                    <span style="color: #666; font-size: 18px;">🏫 {school_name}</span>
-                                </div>
-                                """,
+                    <div style="display: flex; align-items: baseline; gap: 10px; justify-content: flex-end; text-align: right;">
+                        <span style="color: #666; font-size: 18px;">🏫 {school_name}</span>
+                        <h1 style="margin: 0;">👤 {name}</h1>
+                    </div>
+                    """,
                     unsafe_allow_html=True
                 )
             else:
-                st.title(f"👤 {name}")
+                st.markdown(f"<h1 style='text-align: right; margin: 0;'>👤 {name}</h1>", unsafe_allow_html=True)
 
-        with col1:
+        with col3:
             if st.button("התנתקות"):
                 logout()
 
