@@ -693,7 +693,27 @@ with APP.container():
                         st.info("אין מטלות לעריכה.")
 
                 new_title = st.text_input("כותרת", value=title_val)
-                new_class = st.text_input("כיתה", value=class_val)
+                
+                # Fetch existing classes for this teacher's school
+                teacher_school_id = user.get("school_id")
+                existing_classes = []
+                if teacher_school_id:
+                    students_in_school = supabase.table("users").select("class_name").eq("role", "student").eq("school_id", teacher_school_id).execute().data
+                    if students_in_school:
+                        existing_classes = sorted(list({s.get("class_name") for s in students_in_school if s.get("class_name")}))
+                
+                options = existing_classes + ["--- הוסף כיתה חדשה ---"]
+                if class_val and class_val not in existing_classes:
+                    options = [class_val] + [o for o in options if o != class_val]
+
+                default_idx = options.index(class_val) if class_val in options else 0
+                
+                new_class_selection = st.selectbox("כיתה", options, index=default_idx)
+                
+                if new_class_selection == "--- הוסף כיתה חדשה ---":
+                    new_class = st.text_input("הזן שם כיתה חדשה (לדוגמה: 'ט1')", value="", key="new_assign_class")
+                else:
+                    new_class = new_class_selection
 
                 st.write("### 🏗️ מבנה מחוון")
                 final_rubric = []

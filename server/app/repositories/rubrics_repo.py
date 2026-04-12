@@ -7,7 +7,7 @@ def insert_assignment(teacher_id: str, title: str, class_name: str, criteria: li
         "teacher_id": teacher_id,
         "title": title,
         "class_name": class_name,
-        "rubric": criteria  # Stored in 'rubric' jsonb column
+        "criteria": criteria
     }
     response = supabase.table("assignments").insert(new_assignment).execute()
 
@@ -18,7 +18,7 @@ def insert_assignment(teacher_id: str, title: str, class_name: str, criteria: li
         "teacher_id": data["teacher_id"],
         "title": data["title"],
         "class_name": data["class_name"],
-        "criteria": data["rubric"]
+        "criteria": data["criteria"]
     }
 
 
