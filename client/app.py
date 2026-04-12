@@ -794,31 +794,29 @@ with APP.container():
                                 "teacher_id": user["id"],
                                 "title": new_title,
                                 "class_name": new_class.strip(),
-                                "criteria": final_rubric,
-                                "rubric": final_rubric,
+                                "criteria": final_rubric
                             }
                             try:
-                                payload_bytes = json.dumps(rubric_payload, ensure_ascii=False).encode("utf-8")
-                                headers = {"Content-Type": "application/json; charset=utf-8"}
-
                                 if mode_en == "Create New Assignment":
                                     res = requests.post(
                                         f"{API_URL}/teacher/rubrics",
-                                        data=payload_bytes,
-                                        headers=headers,
-                                        timeout=60
+                                        json=rubric_payload,
+                                        timeout=30
                                     )
                                 else:
                                     res = requests.put(
                                         f"{API_URL}/teacher/rubrics/{target_id}",
-                                        data=payload_bytes,
-                                        headers=headers,
-                                        timeout=60
+                                        json=rubric_payload,
+                                        timeout=30
                                     )
+
                                 res.raise_for_status()
                                 st.success("נשמר בהצלחה ✅")
                                 time.sleep(1.2)
                                 st.rerun()
+
+                            except requests.exceptions.HTTPError as err:
+                                st.error(f"❌ שגיאת שרת ({res.status_code}): {res.text}")
                             except Exception as e:
                                 st.error(f"❌ שמירה נכשלה: {e}")
 
@@ -856,8 +854,13 @@ with APP.container():
                                 st.error("חובה להזין שם כיתה עבור התלמידים.")
                             else:
                                 try:
-                                    df_csv = pd.read_csv(students_csv)
+                                    try:
+                                        df_csv = pd.read_csv(students_csv, encoding='utf-8')
+                                    except UnicodeDecodeError:
+                                            students_csv.seek(0)  # חובה: מחזיר את סמן הקריאה לתחילת הקובץ
+                                            df_csv = pd.read_csv(students_csv, encoding='cp1255')
                                     required_cols = ["username", "password"]
+
                                     if not all(col in df_csv.columns for col in required_cols):
                                         st.error(f"CSV חייב להכיל לפחות: {required_cols}")
                                     else:
@@ -880,7 +883,7 @@ with APP.container():
                                         fetch_users.clear()
                                         st.rerun()
                                 except Exception as e:
-                                    st.error(f"❌ נכשל עיבוד הקובץ: {e}")
+                                  st.error(f"❌ נכשל עיבוד הקובץ: {e}")
 
         # ========================================================
         # STUDENT DASHBOARD
