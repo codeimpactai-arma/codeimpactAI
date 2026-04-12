@@ -2,25 +2,27 @@ from .db import supabase
 
 
 def insert_assignment(teacher_id: str, title: str, class_name: str, criteria: list[dict]):
-    # Matches 'assignments' table structure
     new_assignment = {
         "teacher_id": teacher_id,
         "title": title,
         "class_name": class_name,
-        "criteria": criteria
+        "rubric": criteria
     }
+    print(new_assignment)
     response = supabase.table("assignments").insert(new_assignment).execute()
+    print("Supabase Response:", response.data)
 
-    # Return mapped data
+    if not response.data:
+        raise Exception("Supabase returned empty data! RLS might still be on or DB error.")
+
     data = response.data[0]
     return {
         "id": data["id"],
         "teacher_id": data["teacher_id"],
         "title": data["title"],
         "class_name": data["class_name"],
-        "criteria": data["criteria"]
+        "rubric": data.get("rubric", [])  # שימוש ב-get למניעת שגיאת מפתח
     }
-
 
 def list_assignments_by_class(class_name: str):
     # Fetch assignments for a specific class

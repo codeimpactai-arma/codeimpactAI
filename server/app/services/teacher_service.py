@@ -3,6 +3,8 @@ import random
 from typing import List, Any
 
 from fastapi import HTTPException
+
+from ..repositories import rubrics_repo
 from ..repositories.projects_repo import list_submissions_by_student, update_submission_grade
 from ..repositories.rubrics_repo import insert_assignment, list_all_assignments, get_assignment, \
     update_assignment
@@ -18,10 +20,9 @@ def get_students():
         s["project_count"] = len(subs)
     return students
 
-
 def create_rubric(teacher_id: str, title: str, class_name: str, criteria: list[dict]):
-    return insert_assignment(teacher_id, title, class_name, criteria)
-
+    # קריאה לרפוזיטורי
+    return rubrics_repo.insert_assignment(teacher_id, title, class_name, criteria)
 
 def get_rubrics():
     return list_all_assignments()

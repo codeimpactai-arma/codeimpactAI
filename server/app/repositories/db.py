@@ -2,8 +2,8 @@ from datetime import datetime
 
 from supabase import create_client, Client
 
-SUPABASE_URL = "https://hmouoztlgrsotauzohgm.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhtb3VvenRsZ3Jzb3RhdXpvaGdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzMjgwNjUsImV4cCI6MjA3OTkwNDA2NX0.7lICVEIkYaG_629xN_nVPUJspUgkhRswkKJKTF2TNBg"
+SUPABASE_URL = "https://fctvakaarrquaegxlnxa.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjdHZha2FhcnJxdWFlZ3hsbnhhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTgyMjU1NywiZXhwIjoyMDkxMzk4NTU3fQ.QH2KzaNibRMwymHVO3qH0jQ2WYOahJyWazEf_kcy5Ng"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 

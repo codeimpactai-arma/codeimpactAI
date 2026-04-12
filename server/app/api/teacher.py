@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from ..models.teacher_model import RubricCreate, AIAnalysisRequest, GradeSubmit
+from ..services import teacher_service
 from ..services.teacher_service import (
     get_students, get_student_projects, create_rubric,
     get_rubrics, analyze_ai, submit_grade, edit_rubric
@@ -19,8 +20,12 @@ def teacher_student_projects(student_id: int):
 
 @router.post("/rubrics")
 def teacher_create_rubric(r: RubricCreate):
-    create_rubric(teacher_id=r.teacher_id, title=r.title, criteria=r.criteria, class_name=r.class_name)
-    return {"message": "Rubric Created"}
+    return teacher_service.create_rubric(
+        teacher_id=r.teacher_id,
+        title=r.title,
+        class_name=r.class_name,
+        criteria=r.rubric
+    )
 
 @router.get("/rubrics")
 def teacher_list_rubrics():
