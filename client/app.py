@@ -21,7 +21,19 @@ st.set_page_config(
 )
 import base64
 
-
+st.markdown("""
+<style>
+    [data-testid="stTable"] {
+        direction: rtl;
+    }
+    [data-testid="stTable"] th {
+        text-align: right !important;
+    }
+    [data-testid="stTable"] td {
+        text-align: right !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 def centered_title_with_logo(title: str, logo_path: Path, img_px: int = 90, font_px: int = 54, gap_px: int = 12):
     b64 = base64.b64encode(logo_path.read_bytes()).decode("utf-8")
     st.markdown(
