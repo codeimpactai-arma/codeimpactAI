@@ -322,91 +322,89 @@ with APP.container():
                         submitted = st.form_submit_button("כניסה", width="stretch")
 
                 if submitted:
-                    login_placeholder.empty()  # Immediately hide the form
-                    with login_placeholder.container():
-                        st.info("מתחבר, אנא המתן...")
-                        
                     if not u or not p:
                         st.error("אנא הזן/י שם משתמש וסיסמה.")
-                        st.stop()
+                    else:
+                        with st.spinner("מתחבר, אנא המתן..."):
+                            # חיפוש משתמש קיים לפי username
+                            res = supabase.table("users").select("*, schools(name)").eq("username", u).execute()
+                            found_user = res.data[0] if res.data else None
 
-                    # חיפוש משתמש קיים לפי username
-                    res = supabase.table("users").select("*, schools(name)").eq("username", u).execute()
-                    found_user = res.data[0] if res.data else None
-
-                    if found_user:
-                        if tgt == "student":
-                            if found_user.get("class_name") != c_name:
-                                st.error(
-                                    f"⛔ אין הרשאה: אתה רשום/ה לכיתה '{found_user.get('class_name')}', לא '{c_name}'."
-                                )
-                            elif str(found_user.get("password", "")) == p:
-                                st.session_state.auth_user = found_user
-                                st.session_state["logged_in"] = True
-                                st.query_params["session_uid"] = found_user["id"]
-                                navigate("dashboard")
-                            else:
-                                st.error("סיסמה שגויה.")
-                        else:
-                            # מורה/מנהל
-                            if str(found_user.get("password", "")) == p:
-                                st.session_state.auth_user = found_user
-                                st.session_state["logged_in"] = True
-                                st.query_params["session_uid"] = found_user["id"]
-                                navigate("dashboard")
-                            else:
-                                st.error("סיסמה שגויה.")
-
-                    elif tgt == "student":
-                        # רישום אוטומטי לתלמיד חדש
-                        if not c_name:
-                            st.error("שם כיתה הוא חובה לתלמיד חדש.")
-                        else:
-                            # נחפש את הכיתה וגם מי המורה שלה כדי לרשת את בית הספר
-                            class_check = (
-                                supabase.table("assignments")
-                                .select("class_name, teacher_id")
-                                .eq("class_name", c_name)
-                                .execute()
-                            )
-
-                            if not class_check.data:
-                                st.error(f"הכיתה '{c_name}' לא קיימת. פנה/י למורה.")
-                            else:
-                                try:
-                                    # חילוץ מזהה המורה ומשיכת בית הספר שלו
-                                    teacher_id = class_check.data[0].get("teacher_id")
-                                    teacher_res = supabase.table("users").select("school_id").eq("id", teacher_id).execute()
-                                    school_id = teacher_res.data[0].get("school_id") if teacher_res.data else None
-
-                                    new_student = {
-                                        "username": u,
-                                        "password": p,
-                                        "role": "student",
-                                        "full_name": u,
-                                        "class_name": c_name,
-                                        "school_id": school_id
-                                    }
-
-                                    # 1. הוספת התלמיד (בלי select בסוף!)
-                                    insert_res = supabase.table("users").insert(new_student).execute()
-
-                                    if insert_res.data:
-                                        # 2. שליפה מחדש של התלמיד יחד עם שם בית הספר להתחברות
-                                        new_user_id = insert_res.data[0]["id"]
-                                        full_user_res = supabase.table("users").select("*, schools(name)").eq("id", new_user_id).execute()
-
-                                        st.success(f"ברוך/ה הבא/ה! נוצר חשבון עבור {u} בכיתה {c_name}.")
-                                        st.session_state.auth_user = full_user_res.data[0] if full_user_res.data else insert_res.data[0]
+                            if found_user:
+                                if tgt == "student":
+                                    if found_user.get("class_name") != c_name:
+                                        st.error(
+                                            f"⛔ אין הרשאה: אתה רשום/ה לכיתה '{found_user.get('class_name')}', לא '{c_name}'."
+                                        )
+                                    elif str(found_user.get("password", "")) == p:
+                                        st.session_state.auth_user = found_user
                                         st.session_state["logged_in"] = True
-                                        st.query_params["session_uid"] = new_user_id
+                                        st.query_params["session_uid"] = found_user["id"]
                                         navigate("dashboard")
-
                                     else:
-                                        st.error("נכשלה יצירת משתמש (לא הוחזרו נתונים).")
+                                        st.error("פרטים שגויים.")
+                                else:
+                                    # מורה/מנהל
+                                    if str(found_user.get("password", "")) == p:
+                                        st.session_state.auth_user = found_user
+                                        st.session_state["logged_in"] = True
+                                        st.query_params["session_uid"] = found_user["id"]
+                                        navigate("dashboard")
+                                    else:
+                                        st.error("פרטים שגויים.")
 
-                                except Exception as e:
-                                    st.error(f"❌ שגיאה ביצירת חשבון: {e}")
+                            elif tgt == "student":
+                                # רישום אוטומטי לתלמיד חדש
+                                if not c_name:
+                                    st.error("שם כיתה הוא חובה לתלמיד חדש.")
+                                else:
+                                    # נחפש את הכיתה וגם מי המורה שלה כדי לרשת את בית הספר
+                                    class_check = (
+                                        supabase.table("assignments")
+                                        .select("class_name, teacher_id")
+                                        .eq("class_name", c_name)
+                                        .execute()
+                                    )
+
+                                    if not class_check.data:
+                                        st.error(f"הכיתה '{c_name}' לא קיימת. פנה/י למורה.")
+                                    else:
+                                        try:
+                                            # חילוץ מזהה המורה ומשיכת בית הספר שלו
+                                            teacher_id = class_check.data[0].get("teacher_id")
+                                            teacher_res = supabase.table("users").select("school_id").eq("id", teacher_id).execute()
+                                            school_id = teacher_res.data[0].get("school_id") if teacher_res.data else None
+
+                                            new_student = {
+                                                "username": u,
+                                                "password": p,
+                                                "role": "student",
+                                                "full_name": u,
+                                                "class_name": c_name,
+                                                "school_id": school_id
+                                            }
+
+                                            # 1. הוספת התלמיד (בלי select בסוף!)
+                                            insert_res = supabase.table("users").insert(new_student).execute()
+
+                                            if insert_res.data:
+                                                # 2. שליפה מחדש של התלמיד יחד עם שם בית הספר להתחברות
+                                                new_user_id = insert_res.data[0]["id"]
+                                                full_user_res = supabase.table("users").select("*, schools(name)").eq("id", new_user_id).execute()
+
+                                                st.success(f"ברוך/ה הבא/ה! נוצר חשבון עבור {u} בכיתה {c_name}.")
+                                                st.session_state.auth_user = full_user_res.data[0] if full_user_res.data else insert_res.data[0]
+                                                st.session_state["logged_in"] = True
+                                                st.query_params["session_uid"] = new_user_id
+                                                navigate("dashboard")
+
+                                            else:
+                                                st.error("נכשלה יצירת משתמש (לא הוחזרו נתונים).")
+
+                                        except Exception as e:
+                                            st.error(f"❌ שגיאה ביצירת חשבון: {e}")
+                            else:
+                                st.error("פרטים שגויים.")
 
         if st.button("חזרה"):
             navigate("home")
