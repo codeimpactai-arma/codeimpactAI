@@ -24,7 +24,7 @@ def teacher_create_rubric(r: RubricCreate):
         teacher_id=r.teacher_id,
         title=r.title,
         class_name=r.class_name,
-        criteria=r.criteria
+        criteria=r.rubric
     )
 
 @router.get("/rubrics")
