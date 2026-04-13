@@ -1146,25 +1146,57 @@ with APP.container():
                 st.subheader("יצירת משתמש חדש")
                 new_role = st.radio("תפקיד", ["student", "teacher", "admin"], format_func=he_role, horizontal=True)
 
-                with st.form("create_user_form"):
+                if admin_school_id:
+                    selected_school_id = admin_school_id
+                else:
+                    selected_school_name = st.selectbox("שיוך לבית ספר", list(school_options.keys()), key="create_user_school")
+                    selected_school_id = school_options.get(
+                        selected_school_name) if selected_school_name else None
+
+                if "admin_form_key" not in st.session_state:
+                    st.session_state.admin_form_key = 0
+                fk = st.session_state.admin_form_key
+
+                with st.container(border=True):
                     c1, c2 = st.columns(2)
-                    new_username = c1.text_input("שם משתמש")
-                    new_password = c2.text_input("סיסמה", type="password")
-                    new_fullname = c1.text_input("שם מלא")
+                    new_username = c1.text_input("שם משתמש", key=f"create_user_username_{fk}")
+                    new_password = c2.text_input("סיסמה", type="password", key=f"create_user_password_{fk}")
+                    new_fullname = c1.text_input("שם מלא", key=f"create_user_fullname_{fk}")
+                    
+                    sel_key = f"create_user_class_sel_{selected_school_id}_{fk}"
+                    new_key = f"create_user_class_new_{selected_school_id}_{fk}"
                     
                     if new_role == "student":
-                        new_class = c2.text_input("שם כיתה")
+                        existing_classes = []
+                        if selected_school_id is not None:
+                            # 1. כיתות מתוך כל המשתמשים בבית הספר (למקרה שלמורה עצמו מוגדרת כיתה)
+                            users_in_school = [
+                                u for u in users_data 
+                                if str(u.get("school_id")) == str(selected_school_id)
+                            ]
+                            classes_from_users = {u.get("class_name") for u in users_in_school if u.get("class_name")}
+                            
+                            # 2. כיתות מתוך מטלות ששויכו למורים בבית הספר
+                            school_teacher_ids = {str(u["id"]) for u in users_in_school if u.get("role") == "teacher"}
+                            classes_from_assignments = {
+                                a.get("class_name") for a in assignments_data 
+                                if str(a.get("teacher_id")) in school_teacher_ids 
+                                and a.get("class_name")
+                            }
+                            
+                            existing_classes = sorted(list(classes_from_users | classes_from_assignments))
+                            
+                        class_options = existing_classes + ["--- הוסף כיתה חדשה ---"]
+                        selected_class_option = c2.selectbox("שם כיתה", class_options, key=sel_key)
+                        
+                        if selected_class_option == "--- הוסף כיתה חדשה ---":
+                            new_class = c2.text_input("הזן שם כיתה חדשה (לדוגמה: 'ט1')", key=new_key)
+                        else:
+                            new_class = selected_class_option
                     else:
                         new_class = ""
 
-                    if admin_school_id:
-                        selected_school_id = admin_school_id
-                    else:
-                        selected_school_name = st.selectbox("שיוך לבית ספר", list(school_options.keys()))
-                        selected_school_id = school_options.get(
-                            selected_school_name) if selected_school_name else None
-
-                    if st.form_submit_button("יצירה"):
+                    if st.button("יצירה", key="create_user_btn"):
                         if new_username and new_password:
                             try:
                                 user_payload = {
@@ -1177,6 +1209,10 @@ with APP.container():
                                 }
                                 supabase.table("users").insert(user_payload).execute()
                                 st.success(f"המשתמש '{new_username}' נוצר ✅")
+                                
+                                # יצירת מפתחות חדשים כדי לאפס לחלוטין את הטופס למשתמש הבא
+                                st.session_state.admin_form_key += 1
+                                
                                 time.sleep(1)
                                 fetch_users.clear()
                                 st.rerun()
