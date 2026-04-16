@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 import requests
 import streamlit as st
+import altair as alt
 from supabase import create_client
 
 from api.client import API_URL
@@ -857,6 +858,7 @@ with APP.container():
 
                     students_csv = st.file_uploader("בחר/י קובץ CSV", type="csv",
                                                     key="students_upload_teacher")
+                    st.caption("העלה/י קובץ CSV עם כותרות: `username`, `password`, `full_name`")
 
                     if students_csv is not None:
                         if st.button("עיבוד והעלאה לתלמידים", width="stretch"):
@@ -1070,7 +1072,7 @@ with APP.container():
                 c_chart1, c_chart2 = st.columns(2)
 
                 with c_chart1:
-                    st.subheader("📊 ביצועי כיתות")
+                    st.subheader("📊 ביצועי כיתות (ממוצע)")
                     if assignments_data and submissions_data:
                         assign_class_map = {a["id"]: a["class_name"] for a in assignments_data}
                         class_grades = {}
@@ -1086,17 +1088,36 @@ with APP.container():
                             avg_data["ממוצע ציון"].append(sum(grades) / len(grades))
 
                         if avg_data["כיתה"]:
-                            st.bar_chart(pd.DataFrame(avg_data).set_index("כיתה"))
+                            df_avg = pd.DataFrame(avg_data)
+                            chart1 = alt.Chart(df_avg).mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5, size=45).encode(
+                                x=alt.X('כיתה:N', title='כיתה', sort='-y', axis=alt.Axis(labelAngle=0)),
+                                y=alt.Y('ממוצע ציון:Q', title='ממוצע ציון', scale=alt.Scale(domain=[0, 100])),
+                                color=alt.Color('כיתה:N', legend=None),
+                                tooltip=['כיתה', alt.Tooltip('ממוצע ציון:Q', format='.1f')]
+                            ).properties(height=350)
+                            
+                            text1 = chart1.mark_text(align='center', baseline='bottom', dy=-5, fontWeight='bold', color='white').encode(
+                                text=alt.Text('ממוצע ציון:Q', format='.1f')
+                            )
+                            st.altair_chart(chart1 + text1, use_container_width=True)
                         else:
                             st.info("אין עדיין הגשות שנבדקו.")
                     else:
                         st.info("אין מספיק נתונים.")
 
                 with c_chart2:
-                    st.subheader("📌 סטטוס הגשות")
+                    st.subheader("📌 סטטוס הגשות כללי")
                     if submissions_data:
-                        status_counts = pd.Series([he_status(s["status"]) for s in submissions_data]).value_counts()
-                        st.bar_chart(status_counts)
+                        status_counts_df = pd.Series([he_status(s["status"]) for s in submissions_data]).value_counts().reset_index()
+                        status_counts_df.columns = ["סטטוס", "כמות"]
+                        
+                        chart2 = alt.Chart(status_counts_df).mark_arc(innerRadius=60).encode(
+                            theta=alt.Theta(field="כמות", type="quantitative"),
+                            color=alt.Color(field="סטטוס", type="nominal", title="סטטוס"),
+                            tooltip=["סטטוס", "כמות"]
+                        ).properties(height=350)
+                        
+                        st.altair_chart(chart2, use_container_width=True)
                     else:
                         st.info("אין הגשות.")
 
@@ -1240,10 +1261,6 @@ with APP.container():
                     batch_role = st.selectbox("סוג משתמשים בקובץ", ["teacher", "student"], format_func=he_role,
                                               key="csv_role")
 
-                    batch_class = ""
-                    if batch_role == "student":
-                        batch_class = st.text_input("שם כיתה (עבור תלמידים אלו)", key="csv_class")
-
                     if admin_school_id:
                         batch_school_id = admin_school_id
                     else:
@@ -1251,7 +1268,30 @@ with APP.container():
                                                          list(school_options.keys()), key="csv_school")
                         batch_school_id = school_options.get(batch_school_name) if batch_school_name else None
 
+                    batch_class = ""
+                    if batch_role == "student":
+                        existing_classes = []
+                        if batch_school_id:
+                            users_in_school = [u for u in users_data if str(u.get("school_id")) == str(batch_school_id)]
+                            classes_from_users = {u.get("class_name") for u in users_in_school if u.get("class_name")}
+                            
+                            school_teacher_ids = {str(u["id"]) for u in users_in_school if u.get("role") == "teacher"}
+                            classes_from_assignments = {
+                                a.get("class_name") for a in assignments_data 
+                                if str(a.get("teacher_id")) in school_teacher_ids and a.get("class_name")
+                            }
+                            existing_classes = sorted(list(classes_from_users | classes_from_assignments))
+                            
+                        class_options = existing_classes + ["--- הוסף כיתה חדשה ---"]
+                        selected_class_option = st.selectbox("שם כיתה (עבור תלמידים אלו)", class_options, key="csv_class_sel")
+                        
+                        if selected_class_option == "--- הוסף כיתה חדשה ---":
+                            batch_class = st.text_input("הזן שם כיתה חדשה (לדוגמה: 'ט1')", key="csv_class_new")
+                        else:
+                            batch_class = selected_class_option
+
                     users_csv = st.file_uploader("בחר/י קובץ CSV", type="csv", key="users_upload_admin")
+                    st.caption("העלה/י קובץ CSV עם כותרות: `username`, `password`, `full_name`")
 
                     if users_csv is not None:
                         if st.button("עיבוד והעלאה", width="stretch"):
