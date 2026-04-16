@@ -1299,7 +1299,11 @@ with APP.container():
                                 st.error("חובה להזין שם כיתה עבור תלמידים.")
                             else:
                                 try:
-                                    df_csv = pd.read_csv(users_csv)
+                                    try:
+                                        df_csv = pd.read_csv(users_csv, encoding='utf-8')
+                                    except UnicodeDecodeError:
+                                        users_csv.seek(0)
+                                        df_csv = pd.read_csv(users_csv, encoding='cp1255')
                                     required_cols = ["username", "password"]
                                     if not all(col in df_csv.columns for col in required_cols):
                                         st.error(f"CSV חייב להכיל לפחות: {required_cols}")
