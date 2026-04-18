@@ -5,7 +5,7 @@ from ..services.teacher_service import (
     get_students, get_student_projects, create_rubric,
     get_rubrics, analyze_ai, submit_grade, edit_rubric
 )
-from ..services.scratch_parser import download_and_parse_scratch, get_project_token
+from ..services.scratch_parser import download_and_parse_scratch
 from ..repositories.db import supabase
 
 router = APIRouter(prefix="/teacher", tags=["teacher"])
