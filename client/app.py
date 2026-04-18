@@ -667,9 +667,6 @@ with APP.container():
 
                                     if st.form_submit_button("שמירת ציון"):
                                         try:
-                                            # עדכון ב-Supabase
-                                            import supabase_client  # ודאי שהלקוח מיובא
-
                                             supabase.table("submissions").update({
                                                 "final_score": final_score,
                                                 "feedback": final_feedback,
