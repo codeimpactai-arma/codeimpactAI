@@ -55,6 +55,8 @@ def analyze_ai(project_url: str, rubrics: List[Any]):
             sub_weight = sub.get("weight")
             formatted_rubric_text += f"   - {sub_name} (משקל פנימי בתוך הקטגוריה: {sub_weight}%)\n"
 
+    rubric_categories = [cat.get("name") for cat in rubrics]
+
     # 3. ניתוח קוד ה-Scratch (הורדת ה-JSON)
     try:
         project_summary = download_and_parse_scratch(project_url)
@@ -67,53 +69,74 @@ def analyze_ai(project_url: str, rubrics: List[Any]):
         project_summary = f"Could not parse blocks. Error: {str(e)}"
 
     prompt = f"""
-    עליך לשמש כמעריך פדגוגי מומחה ל-Scratch המנתח פרויקטים לעומק.
-    נתח את הפרויקט בכתובת {project_url} על סמך הקריטריונים הבאים.
+        עליך לשמש כמעריך פדגוגי מומחה ל-Scratch המנתח פרויקטים לעומק.
+        נתח את הפרויקט בכתובת {project_url} על סמך הקריטריונים והנתונים הבאים.
 
-    ### מחוון הערכה (Rubrics):
-    {formatted_rubric_text}
+        ### 1. מחוון הערכה (Rubrics):
+        {formatted_rubric_text}
 
-    ### נתוני קוד הפרויקט (Project Summary):
-    {project_summary}
+        ### 2. נתוני קוד הפרויקט (Project Summary):
+        {project_summary}
 
-    ### הנחיות עבודה למשוב:
-    1. הצלבת נתונים: השתמש ברשימת ה-`broadcast_messages` ו-`total_sprites` מתוך נתוני הקוד כדי לקבוע את הציון בקטגוריית "ניהול אירועים ומסרים" ו"מספר אובייקטים".
-    2. נימוק מבוסס ראיות: עבור כל קריטריון, ציין דוגמה ספציפית (שם של דמות, הודעת Broadcast ספציפית או בלוק מיוחד) שתומכת בציון שנתת.
-    3. ניתוח פדגוגי: הסבר בעברית רהוטה מדוע הפרויקט נמצא ברמת "יישום" או "סינטזה" על סמך מורכבות הבלוקים.
-    4. שקלול מתמטי: בצע חישוב מדויק לפי המשקלים (יצירתיות 30%, שימושיות 30%, קוד 40%).
-    5. שקלול מתמטי מדויק: עליך לחשב את הציון הסופי (0-100) על בסיס המשקלים המדויקים המופיעים במחוון לעיל.
+        ### הנחיות קריטיות למבנה הפלט:
+        1. החזר JSON תקין בלבד, ללא טקסט חופשי לפניו או אחריו.
+        2. הציון בשדה "suggested_score" חייב להיות מספר שלם (Integer) בין 0 ל-100.
+        3. בשדה "details", השתמש בדיוק בשמות הקטגוריות האלו כמפתחות: {rubric_categories}. לכל קטגוריה תן ציון מ-0 עד 100.
+        4. בשדה "suggested_feedback", כתוב משוב בעברית רהוטה כפסקאות זורמות.
+        5. חל איסור מוחלט להשתמש במילה 'כותרת' או בנקודות (bullets), כוכביות (*) או מקפים (-) בתחילת שורות.
+        6. השתמש בפורמט Markdown להדגשת שמות קטגוריות (למשל **יצירתיות**) והפרד בין נושאים באמצעות ירידת שורה כפולה.
 
-    ### פורמט פלט נדרש (JSON בלבד):
-    {{
-        "suggested_score": 85,
-        "suggested_feedback": "כותרת: יצירתיות... [נימוק]. כותרת: שימושיות... [נימוק]. כותרת: קוד... [נימוק].",
-        "details": {{
-            "innovation": 8,
-            "ux": 5,
-            "messages_management": 10,
-            "independent_learning": 7
-        }},
-        "evidence_found": ["שמות הבלוקים או המסרים שהשפיעו על הציון"]
-    }}
-    """
+        ### הנחיות פדגוגיות לניתוח:
+        1. הצלבת נתונים: השתמש ברשימות ה-`broadcast_messages`, `total_sprites` ו-`logic_summary` כדי לבסס את הציון.
+        2. נימוק מבוסס ראיות: עבור כל קריטריון, ציין דוגמה ספציפית מהקוד (שם דמות, הודעת Broadcast או בלוק מסוים).
+        3. רמה פדגוגית: קבע האם הפרויקט ברמת "זיהוי", "יישום" או "סינתזה" והסבר מדוע.
+        4. חישוב מתמטי: בצע חישוב מדויק של הציון הסופי על בסיס המשקלים המופיעים במחוון. 
+
+        ### פורמט פלט נדרש (JSON):
+        {{
+            "suggested_score": [הכנס מספר שלם כאן],
+            "suggested_feedback": "[הכנס משוב פסקאות ללא בולטים כאן]",
+            "details": {{
+                {", ".join([f'"{cat}": [ציון]' for cat in rubric_categories])}
+            }},
+            "evidence_found": ["ראיה 1", "ראיה 2"]
+        }}
+
+        התחל את התשובה שלך ב-{{ 
+        הציון המומלץ הסופי הוא:
+        """
 
     # 6. שליחה ל-AI
     try:
         ai_response_raw = generate_text(prompt)
-        clean_json = ai_response_raw.replace("```json", "").replace("```", "").strip()
-        ai_response = json.loads(clean_json)
+
+        # ניקוי ה-Markdown Blocks אם קיימים
+        clean_json = ai_response_raw.strip()
+        if clean_json.startswith("```"):
+            clean_json = clean_json.split("```")[1]
+            if clean_json.startswith("json"):
+                clean_json = clean_json[4:]
+
+        # --- התיקון הקריטי כאן ---
+        # הוספת strict=False מאפשרת לפענח JSON עם תווים מיוחדים בתוך מחרוזות
+        ai_response = json.loads(clean_json, strict=False)
+        # -----------------------
+
+        raw_score = ai_response.get("suggested_score", 0)
+        try:
+            final_score = int(raw_score)
+        except:
+            final_score = 0
+
+        return {
+            "suggested_score": final_score,
+            "suggested_feedback": ai_response.get("suggested_feedback", "לא ניתן לייצר משוב"),
+            "details": ai_response.get("details", {}),
+        }
     except Exception as e:
-        error_msg = str(e)
-        if "503" in error_msg or "high demand" in error_msg:
-            detail = "המודל עמוס כרגע (שגיאה 503). אנא נסו שוב בעוד דקה."
-        else:
-            detail = f"שגיאה בעיבוד ה-AI: {error_msg}"
-        raise HTTPException(status_code=500, detail=detail)
-    return {
-        "suggested_score": ai_response.get("suggested_score", 0),
-        "suggested_feedback": ai_response.get("suggested_feedback", "לא ניתן לייצר משוב"),
-        "details": ai_response.get("details", {}),
-    }
+        # לוג לשגיאה כדי שתוכלי לראות ב-Debug מה ה-AI החזיר באמת
+        print(f"AI Error: {str(e)} | Raw response: {ai_response_raw}")
+        raise HTTPException(status_code=500, detail=f"שגיאה בעיבוד: {str(e)}")
 
 
 def submit_grade(data: dict):
