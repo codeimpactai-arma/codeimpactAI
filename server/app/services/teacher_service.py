@@ -135,9 +135,18 @@ def analyze_ai(project_url: str, rubrics: List[Any]):
             "details": ai_response.get("details", {}),
         }
     except Exception as e:
-        # לוג לשגיאה כדי שתוכלי לראות ב-Debug מה ה-AI החזיר באמת
+    # בדיקה אם זו שגיאת עומס של גוגל (כמו שקרה לך בלוג)
+        error_str = str(e).lower()
+        if "503" in error_str or "high demand" in error_str:
+            print(f"AI Service busy: {error_str}")
+            raise HTTPException(
+                status_code=503,
+                detail="המודל עמוס כרגע (High Demand). אנא נסו שוב בעוד דקה או שתיים."
+            )
+
+        # הדפסה בטוחה של השגיאה (עכשיו ai_response_raw תמיד קיים)
         print(f"AI Error: {str(e)} | Raw response: {ai_response_raw}")
-        raise HTTPException(status_code=500, detail=f"שגיאה בעיבוד: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"שגיאה בעיבוד ה-AI: {str(e)}")
 
 
 def submit_grade(data: dict):
