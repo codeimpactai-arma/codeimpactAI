@@ -549,9 +549,11 @@ with APP.container():
                             with st.expander(f"{s_name} - {a_title}"):
                                 st.write(f"קישור: {s.get('link', '')}")
 
+                                # --- חלק 1: לוגיקת הניתוח (הכפתור) ---
                                 if st.button("🤖 ניתוח עם AI", key=f"ai_{s['id']}"):
                                     with st.spinner("מנתח פרויקט עם AI..."):
                                         try:
+                                            s_id = s['id']
                                             payload = {"project_url": s["link"], "rubrics": rubric_to_send}
                                             response = requests.post(
                                                 f"{API_URL}/teacher/analyze_ai",
@@ -559,76 +561,119 @@ with APP.container():
                                                 timeout=120,
                                             )
 
-                                            # בדיקה אם הסטטוס הוא 200
-                                            # אם יש שגיאת HTTP (404, 500, 503 וכו')
                                             if response.status_code != 200:
                                                 st.error(f"❌ שגיאת שרת (סטטוס {response.status_code})")
                                                 try:
-                                                    # מנסים להציג את הפירוט שהשרת שלח
                                                     st.json(response.json())
                                                 except:
-                                                    # אם השרת החזיר טקסט ולא JSON (למשל שגיאת Render)
                                                     st.code(response.text)
                                                 st.stop()
 
                                             res = response.json()
-                                            st.session_state[f"sc_{s['id']}"] = res.get("suggested_score", 0)
-                                            st.session_state[f"fb_{s['id']}"] = res.get("suggested_feedback", "")
+
+                                            # שמירה בזיכרון (session_state)
+                                            st.session_state[f"sc_{s_id}"] = res.get("suggested_score", 0)
+                                            st.session_state[f"fb_{s_id}"] = res.get("suggested_feedback", "")
+                                            st.session_state[f"details_{s_id}"] = res.get("details", {})
+
                                             st.success("הניתוח הושלם ✅")
-                                            st.markdown(res.get("suggested_feedback", ""))
+                                            time.sleep(0.5)
+                                            st.rerun()  # מרענן כדי להציג את הנתונים בתוך התיבות למטה
 
-                                        except requests.exceptions.Timeout:
-                                            st.error("❌ ה-Client התייאש (Timeout). ייתכן והשרת לוקח יותר מ-120 שניות.")
-                                        except requests.exceptions.ConnectionError:
-                                            st.error(f"❌ לא ניתן להתחבר לשרת בכתובת: {API_URL}. ודאי שה-Backend רץ.")
                                         except Exception as e:
-                                            st.error(f"❌ שגיאה כללית בקוד: {type(e).__name__}")
-                                            st.exception(e)  # זה ידפיס את כל ה-Traceback למסך
+                                            st.error(f"❌ שגיאה: {e}")
 
+                                # --- חלק 2: תצוגת תוצאות ה-AI (מופיע רק אם יש ניתוח בזיכרון) ---
+                                if f"fb_{s['id']}" in st.session_state:
+                                    st.divider()
+
+                                    # יצירת שתי עמודות לכותרת ולציון הסופי המומלץ
+                                    score_header_col, score_val_col = st.columns([3, 1])
+
+                                    with score_header_col:
+                                        st.markdown("### 🤖 הצעת ה-AI")
+
+                                    with score_val_col:
+                                        # הצגת הציון הסופי הכללי בבולטות
+                                        final_suggested = st.session_state.get(f"sc_{s['id']}", 0)
+                                        st.metric(label="ציון סופי מומלץ", value=f"{final_suggested}/100")
+
+                                    # הצגת ציונים לפי קטגוריות (Metrics)
+                                    details = st.session_state.get(f"details_{s['id']}", {})
+                                    if details:
+                                        cols = st.columns(len(details))
+                                        for i, (cat_name, cat_score) in enumerate(details.items()):
+                                            cols[i].metric(label=cat_name, value=f"{cat_score}%")
+
+                                    # הצגת המשוב הטקסטואלי בפורמט RTL
+                                    fb_text = st.session_state.get(f"fb_{s['id']}", "")
+                                    st.markdown(
+                                        f"""
+                                        <div style="direction: rtl; text-align: right; line-height: 1.6; background-color: #f9f9f9; padding: 15px; border-radius: 10px; border-right: 5px solid #4CAF50;">
+                                            {fb_text}
+                                        </div>
+                                        """,
+                                        unsafe_allow_html=True
+                                    )
+                                    st.divider()
+
+                                # --- חלק 3: טופס שמירה ועריכה ---
                                 with st.form(f"grade_{s['id']}"):
-                                    st.write("עריכת משוב וציון סופי")
+                                    st.write("### עריכת משוב וציון סופי")
 
-                                    # 1. שליפת הערכים מה-session_state או מה-DB
-                                    # שימי לב לשמות המשתנים: suggested_score ו-suggested_feedback
-                                    suggested_score = st.session_state.get(f"sc_{s['id']}", s.get('final_score', 0))
-                                    suggested_feedback = st.session_state.get(f"fb_{s['id']}", s.get('feedback', ""))
+                                    s_id = s['id']
 
-                                    # 2. שדה הציון
+                                    # לוגיקה למשיכת הערך (AI > DB > Default 0)
+                                    ai_score = st.session_state.get(f"sc_{s_id}")
+                                    db_score = s.get('final_score')
+
+                                    if ai_score is not None:
+                                        final_default_score = int(ai_score)
+                                    elif db_score is not None:
+                                        final_default_score = int(db_score)
+                                    else:
+                                        final_default_score = 0
+
                                     final_score = st.number_input(
                                         "ציון (0-100)",
                                         min_value=0,
                                         max_value=100,
-                                        value=int(suggested_score) if suggested_score else 0,
-                                        key=f"num_{s['id']}"
+                                        value=final_default_score,
+                                        key=f"num_input_{s_id}"
                                     )
 
-                                    # 3. שדה המשוב - מוודאים שהוא מקבל את ה-suggested_feedback מה-AI
+                                    ai_fb = st.session_state.get(f"fb_{s_id}")
+                                    db_fb = s.get('feedback', "")
+                                    final_default_fb = ai_fb if ai_fb is not None else db_fb
+
                                     final_feedback = st.text_area(
-                                        "משוב למורה (ניתן לעריכה)",
-                                        value=suggested_feedback,
+                                        "משוב סופי",
+                                        value=final_default_fb,
                                         height=250,
-                                        key=f"txt_{s['id']}"
+                                        key=f"txt_input_{s_id}"
                                     )
 
                                     if st.form_submit_button("שמירת ציון"):
                                         try:
-                                            # עדכון ב-Supabase - משתמשים ב-final_score ו-final_feedback מהטופס
+                                            # עדכון ב-Supabase
+                                            import supabase_client  # ודאי שהלקוח מיובא
+
                                             supabase.table("submissions").update({
                                                 "final_score": final_score,
                                                 "feedback": final_feedback,
                                                 "status": "Graded"
-                                            }).eq("id", s["id"]).execute()
+                                            }).eq("id", s_id).execute()
 
                                             # ניקוי הזיכרון הזמני
-                                            st.session_state.pop(f"sc_{s['id']}", None)
-                                            st.session_state.pop(f"fb_{s['id']}", None)
+                                            st.session_state.pop(f"sc_{s_id}", None)
+                                            st.session_state.pop(f"fb_{s_id}", None)
+                                            st.session_state.pop(f"details_{s_id}", None)
 
-                                            st.success(f"הציון והמשוב עבור {s_name} נשמרו בהצלחה! ✅")
+                                            st.success(f"הציון והמשוב נשמרו בהצלחה! ✅")
                                             time.sleep(1)
                                             st.rerun()
                                         except Exception as e:
                                             st.error(f"❌ שמירה נכשלה: {e}")
-
             # ----------------------------
             # TAB 2: MANAGE ASSIGNMENTS
             # ----------------------------
