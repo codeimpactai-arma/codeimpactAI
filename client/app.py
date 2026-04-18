@@ -580,8 +580,20 @@ with APP.container():
                                             time.sleep(0.5)
                                             st.rerun()  # מרענן כדי להציג את הנתונים בתוך התיבות למטה
 
+
+                                        except requests.exceptions.Timeout:
+
+                                            st.error("❌ ה-Client התייאש (Timeout). הניתוח לוקח יותר מ-120 שניות.")
+
+                                        except requests.exceptions.ConnectionError:
+
+                                            st.error(f"❌ לא ניתן להתחבר לשרת בכתובת: {API_URL}. ודא שה-Backend רץ.")
+
                                         except Exception as e:
-                                            st.error(f"❌ שגיאה: {e}")
+
+                                            st.error(f"❌ שגיאה כללית: {type(e).__name__}")
+
+                                            st.exception(e)
 
                                 # --- חלק 2: תצוגת תוצאות ה-AI (מופיע רק אם יש ניתוח בזיכרון) ---
                                 if f"fb_{s['id']}" in st.session_state:
