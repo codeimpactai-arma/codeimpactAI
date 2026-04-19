@@ -908,7 +908,50 @@ with APP.container():
                     # משיכת המזהה של בית הספר של המורה כדי להוריש אותו לתלמידים
                     teacher_school_id = user.get("school_id")
 
-                    batch_class = st.text_input("לאיזו כיתה לשייך תלמידים אלו?", key="teacher_csv_class")
+                    # --- שליפת כיתות קיימות של המורה ---
+                    _csv_existing_classes = []
+                    # כיתות מהמטלות של המורה
+                    _teacher_assigns_csv = (
+                        supabase.table("assignments")
+                        .select("class_name")
+                        .eq("teacher_id", user["id"])
+                        .execute()
+                        .data or []
+                    )
+                    _csv_existing_classes = sorted(list(
+                        {a.get("class_name") for a in _teacher_assigns_csv if a.get("class_name")}
+                    ))
+                    # כיתות נוספות מתלמידים שכבר קיימים בבית הספר
+                    if teacher_school_id:
+                        _students_school = (
+                            supabase.table("users")
+                            .select("class_name")
+                            .eq("role", "student")
+                            .eq("school_id", teacher_school_id)
+                            .execute()
+                            .data or []
+                        )
+                        _extra = {s.get("class_name") for s in _students_school if s.get("class_name")}
+                        _csv_existing_classes = sorted(list(set(_csv_existing_classes) | _extra))
+
+                    _NEW_CLASS_OPTION = "➕ כיתה חדשה..."
+                    _class_options = _csv_existing_classes + [_NEW_CLASS_OPTION]
+
+                    _selected_class = st.selectbox(
+                        "לאיזו כיתה לשייך תלמידים אלו?",
+                        _class_options,
+                        index=0,
+                        key="teacher_csv_class_select"
+                    )
+
+                    if _selected_class == _NEW_CLASS_OPTION:
+                        batch_class = st.text_input(
+                            "שם הכיתה החדשה (לדוגמה: ט1)",
+                            value="",
+                            key="teacher_csv_class_new"
+                        )
+                    else:
+                        batch_class = _selected_class
 
                     students_csv = st.file_uploader("בחר/י קובץ CSV", type="csv",
                                                     key="students_upload_teacher")
