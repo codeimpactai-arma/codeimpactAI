@@ -48,13 +48,13 @@ def centered_title_with_logo(title: str, logo_path: Path, img_px: int = 90, font
             gap:{gap_px}px;
             margin: 10px 0 8px 0;
         ">
+            <img src="data:image/png;base64,{b64}" style="width:{img_px}px; height:auto;" />
             <span style="
                 font-size:{font_px}px;
                 font-weight:800;
                 line-height:1;
                 margin:0;
             ">{title}</span>
-            <img src="data:image/png;base64,{b64}" style="width:{img_px}px; height:auto;" />
         </div>
         """,
         unsafe_allow_html=True
