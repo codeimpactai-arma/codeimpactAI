@@ -124,13 +124,13 @@ def render_top_left_logos():
                 top: 10px;
                 left: 10px;
                 display: flex;
-                gap: 10px;
+                gap: 15px;
                 align-items: center;
                 z-index: 999999;
             ">
                 <img src="data:image/png;base64,{b64_logo}" style="height: 40px; width: auto;" />
-                <img src="data:image/jpeg;base64,{b64_hit}" style="height: 40px; width: auto;" />
-                <img src="data:image/png;base64,{b64_city}" style="height: 40px; width: auto;" />
+                <img src="data:image/jpeg;base64,{b64_hit}" style="height: 55px; width: auto;" />
+                <img src="data:image/png;base64,{b64_city}" style="height: 55px; width: auto;" />
             </div>
             """,
             unsafe_allow_html=True
