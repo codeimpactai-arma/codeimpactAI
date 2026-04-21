@@ -934,6 +934,13 @@ with APP.container():
 
                 with st.expander("📤 העלאת תלמידים מקובץ CSV"):
                     st.write("העלה/י קובץ CSV עם כותרות: `username`, `password`, `full_name`")
+                    template_csv = "username,password,full_name"
+                    st.download_button(
+                        label="📥 הורדת קובץ לדוגמה (CSV Template)",
+                        data=template_csv,
+                        file_name="users_template.csv",
+                        mime="text/csv",
+                    )
 
                     # משיכת המזהה של בית הספר של המורה כדי להוריש אותו לתלמידים
                     teacher_school_id = user.get("school_id")
@@ -1384,7 +1391,13 @@ with APP.container():
                 st.subheader("טעינה מרוכזת מקובץ CSV")
                 with st.expander("📤 העלאת משתמשים מקובץ CSV"):
                     st.write("העלה/י קובץ CSV עם כותרות: `username`, `password`, `full_name`")
-
+                    template_csv = "username,password,full_name"
+                    st.download_button(
+                        label="📥 הורדת קובץ לדוגמה (CSV Template)",
+                        data=template_csv,
+                        file_name="users_template.csv",
+                        mime="text/csv",
+                    )
                     batch_role = st.selectbox("סוג משתמשים בקובץ", ["teacher", "student"], format_func=he_role,
                                               key="csv_role")
 
