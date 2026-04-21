@@ -13,6 +13,8 @@ from api.client import API_URL
 
 ROOT = Path(__file__).parent
 LOGO = ROOT / "assets" / "logo_without_back.png"
+HIT_LOGO = ROOT / "assets" / "HITlogo.jfif"
+CITY_LOGO = ROOT / "assets" / "city.png"
 
 st.set_page_config(
     page_title="Scratch AI",
@@ -109,6 +111,33 @@ def load_css():
     else:
         st.warning(f"⚠️ לא נמצא קובץ CSS: {css_path}")
 
+def render_top_left_logos():
+    try:
+        b64_logo = base64.b64encode(LOGO.read_bytes()).decode("utf-8")
+        b64_hit = base64.b64encode(HIT_LOGO.read_bytes()).decode("utf-8")
+        b64_city = base64.b64encode(CITY_LOGO.read_bytes()).decode("utf-8")
+        
+        st.markdown(
+            f"""
+            <div style="
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                z-index: 999999;
+            ">
+                <img src="data:image/png;base64,{b64_logo}" style="height: 40px; width: auto;" />
+                <img src="data:image/jpeg;base64,{b64_hit}" style="height: 40px; width: auto;" />
+                <img src="data:image/png;base64,{b64_city}" style="height: 40px; width: auto;" />
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    except Exception as e:
+        pass
+
 
 @st.cache_resource
 def init_supabase():
@@ -193,6 +222,7 @@ if st.session_state["_hard_clear"]:
 # ============================================================
 with APP.container():
     load_css()
+    render_top_left_logos()
     supabase = init_supabase()
 
     if supabase is None:
