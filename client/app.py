@@ -319,6 +319,27 @@ with APP.container():
                     st.session_state.target = "admin"
                     navigate("login")
 
+        if not st.session_state["logged_in"]:
+            st.markdown(
+                """
+                <div style="
+                    margin-top: 40px;
+                    background-color: #f8f9fa;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    padding: 12px;
+                    text-align: center;
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #555;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                ">
+                    פותח במסגרת לימודי מדעי המחשב בפקולטה HIT
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
     # ============================================================
     # PAGE: LOGIN
     # ============================================================
